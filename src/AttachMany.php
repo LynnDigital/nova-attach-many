@@ -62,6 +62,11 @@ class AttachMany extends Field
                     // remove `null` values that may be submitted
                     $filtered_values = array_filter($values);
 
+                    // HasMany does not have a `sync` method
+                    if($model->$attribute() instanceof \Illuminate\Database\Eloquent\Relations\HasMany) {
+                        return;
+                    }
+
                     // sync
                     $changes = $model->$attribute()->sync($filtered_values);
 
