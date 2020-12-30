@@ -64,8 +64,15 @@ class AttachMany extends Field
 
                     // HasMany does not have a `sync` method
                     if($model->$attribute() instanceof \Illuminate\Database\Eloquent\Relations\HasMany) {
+                        $modelClass = get_class($model->$attribute()->getModel());
+
+                        $models = [];
+                        foreach($filtered_values as $id) {
+                            $models[] = $modelClass::findOrFail($id);
+                        }
+
                         $model->$attribute()->delete();
-                        $model->$attribute()->saveMany($filtered_values);
+                        $model->$attribute()->saveMany($models);
                     }
                     else {
                         // sync
