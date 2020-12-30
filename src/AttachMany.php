@@ -57,18 +57,21 @@ class AttachMany extends Field
 
                     // fetch the submitted values
                     $values = json_decode(request()->input($attribute), true);
+
+                    // return if no values
                     if($values === null) { return; }
 
                     // remove `null` values that may be submitted
                     $filtered_values = array_filter($values);
 
-                    // HasMany does not have a `sync` method
+                    // Support the HasMany or HasOneOrMany relationship
                     if($model->$attribute() instanceof \Illuminate\Database\Eloquent\Relations\HasMany) {
-                        $modelClass = $model->$attribute()->getModel();
+                        $modelClass = get_class($model->$attribute()->getModel());
+                        $foreignKey = $model->$attribute()->getForeignKeyName();
 
                         $models = [];
                         foreach($filtered_values as $id) {
-                            $models[] = $modelClass::find($id);
+                            $models[] = new $modelClass([$foreignKey => $id]);
                         }
 
                         $model->$attribute()->delete();
