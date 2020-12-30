@@ -64,18 +64,20 @@ class AttachMany extends Field
 
                     // HasMany does not have a `sync` method
                     if($model->$attribute() instanceof \Illuminate\Database\Eloquent\Relations\HasMany) {
-                        return;
+                        $model->$attribute()->delete();
+                        $model->$attribute()->saveMany($filtered_values);
                     }
+                    else {
+                        // sync
+                        $changes = $model->$attribute()->sync($filtered_values);
 
-                    // sync
-                    $changes = $model->$attribute()->sync($filtered_values);
+                        $method = Str::camel($attribute) . 'Synced';
 
-                    $method = Str::camel($attribute) . 'Synced';
+                        $parent = $request->newResource();
 
-                    $parent = $request->newResource();
-
-                    if (method_exists($parent, $method)) {
-                        $parent->{$method}($changes);
+                        if (method_exists($parent, $method)) {
+                            $parent->{$method}($changes);
+                        }
                     }
                 });
 
