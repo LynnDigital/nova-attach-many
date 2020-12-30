@@ -66,16 +66,30 @@ class AttachMany extends Field
 
                     // Support the HasMany or HasOneOrMany relationship
                     if($model->$attribute() instanceof \Illuminate\Database\Eloquent\Relations\HasMany) {
-                        $modelClass = get_class($model->$attribute()->getModel());
+                        $modelClass = $model->$attribute()->getModel();
                         $foreignKey = $model->$attribute()->getForeignKeyName();
 
-                        $models = [];
-                        foreach($filtered_values as $id) {
-                            $models[] = new $modelClass([$foreignKey => $id]);
+                        // Remove deleted/unattached models
+                        foreach($model->$attribute as $oldModel) {
+                            if(!in_array($oldModel->$foreignKey, $filtered_values)) {
+                                //Im unsure if this logic will work with all use cases
+                                //with some cases the column may not be nullable
+                                $oldModel->$foreignKey = null;
+                                $oldModel->save();
+                            }
                         }
 
-                        $model->$attribute()->delete();
-                        $model->$attribute()->saveMany($models);
+                        // Add new models
+                        foreach($filtered_values as $id) {
+                            $modelToAttach = $modelClass::find($id);
+
+                            if($model->$attribute->contains($modelToAttach)) {
+                                continue;
+                            }
+
+                            $modelToAttach->$foreignKey = $model->getKey();
+                            $modelToAttach->save();
+                        }
                     }
                     else {
                         // sync
